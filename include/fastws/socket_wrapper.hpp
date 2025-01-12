@@ -27,13 +27,13 @@ namespace fastws {
 using string = std::basic_string<char, std::char_traits<char>,
                                  boost::fast_pool_allocator<char>>;
 
-class SocketWrapperException : public std::runtime_error {
+class SSLSocketWrapperException : public std::runtime_error {
   public:
-    explicit SocketWrapperException(const std::string& msg)
+    explicit SSLSocketWrapperException(const std::string& msg)
         : std::runtime_error(msg) {}
 };
 
-template <bool verbose = false> class SocketWrapper {
+template <bool verbose = false> class SSLSocketWrapper {
   private:
     // the url of the host we are making requests to
     std::string m_host;
@@ -77,7 +77,7 @@ template <bool verbose = false> class SocketWrapper {
         if (int rc = getaddrinfo(m_host.c_str(), std::to_string(m_port).c_str(),
                                  &hints, &addrs);
             rc != 0) {
-            throw SocketWrapperException(std::string(gai_strerror(rc)));
+            throw SSLSocketWrapperException(std::string(gai_strerror(rc)));
         }
 
         for (addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next) {
@@ -107,7 +107,7 @@ template <bool verbose = false> class SocketWrapper {
         }
 
         if (m_sockfd == -1)
-            throw SocketWrapperException("Failed to connect to server.");
+            throw SSLSocketWrapperException("Failed to connect to server.");
 
         // ssl boilerplate
         const SSL_METHOD* meth = TLS_client_method();
@@ -115,7 +115,7 @@ template <bool verbose = false> class SocketWrapper {
         m_ssl = SSL_new(m_ctx);
 
         if (!m_ssl)
-            throw SocketWrapperException("Failed to create SSL.");
+            throw SSLSocketWrapperException("Failed to create SSL.");
 
         SSL_set_tlsext_host_name(m_ssl, m_host.c_str());
 
@@ -123,7 +123,7 @@ template <bool verbose = false> class SocketWrapper {
         SSL_set_fd(m_ssl, m_sockfd);
 
         if (SSL_connect(m_ssl) <= 0) {
-            throw SocketWrapperException(get_ssl_error());
+            throw SSLSocketWrapperException(get_ssl_error());
         }
 
         if constexpr (verbose) {
@@ -148,17 +148,17 @@ template <bool verbose = false> class SocketWrapper {
     }
 
   public:
-    SocketWrapper(const std::string host, const long port = 443)
+    SSLSocketWrapper(const std::string host, const long port = 443)
         : m_host(host), m_port(port) {
         connect();
     }
 
-    SocketWrapper() {}
+    SSLSocketWrapper() {}
 
-    SocketWrapper(const SocketWrapper&) = delete;
-    SocketWrapper& operator=(const SocketWrapper&) = delete;
+    SSLSocketWrapper(const SSLSocketWrapper&) = delete;
+    SSLSocketWrapper& operator=(const SSLSocketWrapper&) = delete;
 
-    SocketWrapper(SocketWrapper&& other)
+    SSLSocketWrapper(SSLSocketWrapper&& other)
         : m_host(std::move(other.m_host)), m_sockfd(other.m_sockfd),
           m_sslsock(other.m_sslsock), m_ctx(other.m_ctx), m_ssl(other.m_ssl),
           m_out(std::move(other.m_out)) {
@@ -168,7 +168,7 @@ template <bool verbose = false> class SocketWrapper {
         other.m_ssl = nullptr;
     }
 
-    SocketWrapper& operator=(SocketWrapper&& other) {
+    SSLSocketWrapper& operator=(SSLSocketWrapper&& other) {
         disconnect();
 
         m_host = std::move(other.m_host);
@@ -197,17 +197,17 @@ template <bool verbose = false> class SocketWrapper {
                 int err = SSL_get_error(m_ssl, len);
                 switch (err) {
                 case SSL_ERROR_WANT_WRITE:
-                    throw SocketWrapperException("SSL_ERROR_WANT_WRITE");
+                    throw SSLSocketWrapperException("SSL_ERROR_WANT_WRITE");
                 case SSL_ERROR_WANT_READ:
-                    throw SocketWrapperException("SSL_ERROR_WANT_READ");
+                    throw SSLSocketWrapperException("SSL_ERROR_WANT_READ");
                 case SSL_ERROR_ZERO_RETURN:
-                    throw SocketWrapperException("SSL_ERROR_ZERO_RETURN");
+                    throw SSLSocketWrapperException("SSL_ERROR_ZERO_RETURN");
                 case SSL_ERROR_SYSCALL:
-                    throw SocketWrapperException("SSL_ERROR_SYSCALL");
+                    throw SSLSocketWrapperException("SSL_ERROR_SYSCALL");
                 case SSL_ERROR_SSL:
-                    throw SocketWrapperException("SSL_ERROR_SSL");
+                    throw SSLSocketWrapperException("SSL_ERROR_SSL");
                 default:
-                    throw SocketWrapperException("UNKNOWN SSL ERROR");
+                    throw SSLSocketWrapperException("UNKNOWN SSL ERROR");
                 }
             }
             to_send -= len;
@@ -234,8 +234,186 @@ template <bool verbose = false> class SocketWrapper {
         return m_out;
     }
 
-    void poll() {}
+    ~SSLSocketWrapper() { disconnect(); }
+};
+
+class SocketWrapperException : public std::runtime_error {
+  public:
+    explicit SocketWrapperException(const std::string& msg)
+        : std::runtime_error(msg) {}
+};
+
+template <bool verbose = false> class SocketWrapper {
+  private:
+    std::string m_host;
+    long m_port;
+
+    // raw TCP socket
+    int m_sockfd = -1;
+
+    // buffer for storing read results
+    string m_out;
+
+    void connect() {
+        // optional pre-allocation for m_out
+        m_out.reserve(1000);
+
+        // set up hints for getaddrinfo
+        struct addrinfo hints = {}, *addrs = nullptr;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+
+        if (int rc = getaddrinfo(m_host.c_str(), std::to_string(m_port).c_str(),
+                                 &hints, &addrs);
+            rc != 0) {
+            throw SocketWrapperException(std::string(gai_strerror(rc)));
+        }
+
+        bool connected = false;
+        for (addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next) {
+            // create socket
+            m_sockfd =
+                ::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+            if (m_sockfd == -1) {
+                continue; // try next address
+            }
+
+            // set TCP_NODELAY
+            int flag = 1;
+            if (::setsockopt(m_sockfd, IPPROTO_TCP, TCP_NODELAY,
+                             reinterpret_cast<char*>(&flag), sizeof(int)) < 0) {
+                std::cerr << "Error setting TCP_NODELAY" << std::endl;
+            } else {
+                if constexpr (verbose) {
+                    std::cout << "Set TCP_NODELAY" << std::endl;
+                }
+            }
+
+            // attempt connect
+            if (::connect(m_sockfd, addr->ai_addr, addr->ai_addrlen) == 0) {
+                // success
+                connected = true;
+                break;
+            }
+
+            // if connect fails, close socket and try next
+            ::close(m_sockfd);
+            m_sockfd = -1;
+        }
+
+        freeaddrinfo(addrs);
+
+        if (!connected || m_sockfd == -1) {
+            throw SocketWrapperException("Failed to connect to server.");
+        }
+
+        // make the socket non-blocking
+        fcntl(m_sockfd, F_SETFL, O_NONBLOCK);
+    }
+
+    void disconnect() {
+        if (m_sockfd >= 0) {
+            ::close(m_sockfd);
+            m_sockfd = -1;
+        }
+    }
+
+  public:
+    SocketWrapper(const std::string& host, long port = 80)
+        : m_host(host), m_port(port) {
+        connect();
+    }
+
+    SocketWrapper() {}
+
+    SocketWrapper(const SocketWrapper&) = delete;
+    SocketWrapper& operator=(const SocketWrapper&) = delete;
+
+    SocketWrapper(SocketWrapper&& other)
+        : m_host(std::move(other.m_host)), m_port(other.m_port),
+          m_sockfd(other.m_sockfd), m_out(std::move(other.m_out)) {
+        other.m_sockfd = -1;
+    }
+
+    SocketWrapper& operator=(SocketWrapper&& other) {
+        disconnect();
+
+        m_host = std::move(other.m_host);
+        m_port = other.m_port;
+        m_sockfd = other.m_sockfd;
+        m_out = std::move(other.m_out);
+
+        other.m_sockfd = -1;
+        return *this;
+    }
+
     ~SocketWrapper() { disconnect(); }
+
+    // send all data, blocking until complete (though socket is non-blocking).
+    // in production, you might handle EAGAIN / partial writes more gracefully.
+    int send(const std::string_view& req) {
+        const char* buf = req.data();
+        int to_send = static_cast<int>(req.size());
+        int total_sent = 0;
+
+        while (to_send > 0) {
+            ssize_t ret = ::send(m_sockfd, buf + total_sent, to_send, 0);
+            if (ret < 0) {
+                // handle EAGAIN if non-blocking
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // either wait or throw
+                    throw SocketWrapperException("Socket would block on send");
+                }
+                throw SocketWrapperException("send() failed");
+            }
+            to_send -= ret;
+            total_sent += ret;
+        }
+        return total_sent;
+    }
+
+    // read all available data in loops.
+    // returns everything read in m_out as a string_view.
+    // if no data is available, returns empty.
+    // if the socket is closed or error, might throw or return partial.
+    std::string_view read(std::size_t chunk_size = 4096) {
+        m_out.clear();
+        while (true) {
+            // expand buffer
+            std::size_t old_size = m_out.size();
+            m_out.resize(old_size + chunk_size);
+            char* buf = &m_out[old_size];
+
+            // read from socket
+            ssize_t ret = ::recv(m_sockfd, buf, chunk_size, 0);
+            if (ret < 0) {
+                // handle EAGAIN or EWOULDBLOCK if non-blocking
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // no more data available now
+                    m_out.resize(old_size);
+                    break;
+                } else {
+                    throw SocketWrapperException("recv() failed: " +
+                                                 std::to_string(errno));
+                }
+            } else if (ret == 0) {
+                // connection closed by peer
+                m_out.resize(old_size);
+                break;
+            } else {
+                // got ret bytes
+                m_out.resize(old_size + ret);
+                // if ret < chunk_size, might be no more data right now
+                if (static_cast<size_t>(ret) < chunk_size) {
+                    // done reading for now
+                    break;
+                }
+                // else loop to grab more
+            }
+        }
+        return m_out;
+    }
 };
 
 } // namespace fastws

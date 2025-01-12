@@ -12,21 +12,25 @@
 
 namespace fastws {
 
-template <class FrameHandler> class Client {
+template <template <bool> class SocketType, class FrameHandler> class Client {
   private:
     FrameHandler& m_handler;
     std::string m_host;
     std::string m_path;
     long m_port;
-    SocketWrapper<false> m_socket;
+    SocketType<false> m_socket;
     wsframe::FrameParser m_parser;
     wsframe::FrameFactory m_factory;
     bool m_connection_open = false;
 
     bool connect(int timeout = 10 /*seconds*/) {
-        m_socket = SocketWrapper<false>(m_host, m_port);
+        m_socket = SocketType<false>(m_host, m_port);
+        auto host = m_host;
+        if (m_port != 443) {
+            host += ":" + std::to_string(m_port);
+        }
         auto request = fastws::build_websocket_handshake_request(
-            m_host, m_path, fastws::generate_sec_websocket_key());
+            host, m_path, fastws::generate_sec_websocket_key());
         m_socket.send(request);
         std::string response = "";
         for (int i = 0; i < timeout * 10; i++) {

@@ -34,3 +34,5 @@
 .vscode
 build
 .DS_Store
+
+tests/reports
