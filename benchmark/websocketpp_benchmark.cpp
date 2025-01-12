@@ -31,6 +31,9 @@
 #include <chrono>
 #include <iostream>
 
+//#define MESSAGE "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+#define MESSAGE "ping"
+
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
 using websocketpp::lib::bind;
@@ -48,7 +51,7 @@ struct Handler {
 
     void on_message(client* c, websocketpp::connection_hdl hdl,
                     message_ptr msg) {
-        if (msg->get_payload() == "ping"){
+        if (msg->get_payload() == MESSAGE){
             count++;
             if (count >= max_count) {
                 end = std::chrono::high_resolution_clock::now();
@@ -66,14 +69,14 @@ struct Handler {
                 return;
             }
             websocketpp::lib::error_code ec;
-            c->send(hdl, "ping", websocketpp::frame::opcode::text, ec);
+            c->send(hdl, MESSAGE, websocketpp::frame::opcode::text, ec);
         }
     }
 
     void on_open(websocketpp::connection_hdl hdl, client* c) {
         websocketpp::lib::error_code ec;
         start = std::chrono::high_resolution_clock::now();
-        c->send(hdl, "ping", websocketpp::frame::opcode::text, ec);
+        c->send(hdl, MESSAGE, websocketpp::frame::opcode::text, ec);
     }
 };
 

@@ -5,6 +5,9 @@
 #include <string>
 #include <string_view>
 
+//#define MESSAGE "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+#define MESSAGE "ping"
+
 struct FrameHandler {
     using Client = fastws::Client<FrameHandler>;
     int count = 0;
@@ -14,11 +17,11 @@ struct FrameHandler {
 
     void on_open(Client& client) {
         start = std::chrono::high_resolution_clock::now();
-        client.send_text("ping");
+        client.send_text(MESSAGE);
     }
 
     void on_text(Client& client, wsframe::Frame frame) {
-        if (frame.payload == "ping"){
+        if (frame.payload == MESSAGE){
             count++;
             if (count >= max_count) {
                 end = std::chrono::high_resolution_clock::now();
@@ -32,7 +35,7 @@ struct FrameHandler {
                 client.close();
                 return;
             }
-            client.send_text("ping");
+            client.send_text(MESSAGE);
         }
     }
 
