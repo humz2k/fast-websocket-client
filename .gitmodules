@@ -1,3 +1,6 @@
 [submodule "ext/websocket-frame-utility"]
 	path = ext/websocket-frame-utility
 	url = https://github.com/humz2k/websocket-frame-utility.git
+[submodule "ext/websocketpp"]
+	path = ext/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
