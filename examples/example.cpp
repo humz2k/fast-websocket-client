@@ -5,7 +5,7 @@
 #include <string_view>
 
 struct FrameHandler {
-    using Client = fastws::Client<fastws::SSLSocketWrapper, FrameHandler>;
+    using Client = fastws::SSLClient<FrameHandler>;
     void on_open(Client& client) {
         std::cout << "Connection Opened!" << std::endl;
         client.send_text("Hello, World!");

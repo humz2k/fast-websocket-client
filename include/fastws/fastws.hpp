@@ -12,7 +12,7 @@
 
 namespace fastws {
 
-template <template <bool> class SocketType, class FrameHandler> class Client {
+template <template <bool> class SocketType, class FrameHandler> class WSClient {
   private:
     FrameHandler& m_handler;
     std::string m_host;
@@ -63,10 +63,11 @@ template <template <bool> class SocketType, class FrameHandler> class Client {
     }
 
   public:
-    Client(FrameHandler& handler, const std::string& host,
-           const std::string& path, const long port = 443)
+    WSClient(FrameHandler& handler, const std::string& host,
+             const std::string& path, const long port = 443,
+             int connection_timeout = 10 /*seconds*/)
         : m_handler(handler), m_host(host), m_path(path), m_port(port) {
-        if (!connect()) {
+        if (!connect(connection_timeout)) {
             throw std::runtime_error("Failed to connect to ws server");
         }
     }
@@ -93,7 +94,7 @@ template <template <bool> class SocketType, class FrameHandler> class Client {
         return success;
     }
 
-    ~Client() { close(); }
+    ~WSClient() { close(); }
 
     void send_text(std::string_view payload) {
         send(m_factory.text(true, true, payload));
@@ -130,6 +131,12 @@ template <template <bool> class SocketType, class FrameHandler> class Client {
         return m_connection_open;
     }
 };
+
+template <class FrameHandler>
+using SSLClient = WSClient<SSLSocketWrapper, FrameHandler>;
+
+template <class FrameHandler>
+using Client = WSClient<SocketWrapper, FrameHandler>;
 
 } // namespace fastws
 

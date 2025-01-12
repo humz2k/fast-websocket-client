@@ -6,7 +6,7 @@
 #include <cstdint>
 
 struct FrameHandler1_1 {
-    using Client = fastws::Client<fastws::SocketWrapper, FrameHandler1_1>;
+    using Client = fastws::WSClient<fastws::SocketWrapper, FrameHandler1_1>;
     std::string initial_message;
     FrameHandler1_1(std::string initial_message_) : initial_message(initial_message_){}
     void on_open(Client& client) { client.send_text(initial_message); }
@@ -57,7 +57,7 @@ void test_1_1_7(std::string path = "/runCase?case=7&agent=myagent", std::string 
 }
 
 struct FrameHandler1_2 {
-    using Client = fastws::Client<fastws::SocketWrapper, FrameHandler1_2>;
+    using Client = fastws::WSClient<fastws::SocketWrapper, FrameHandler1_2>;
     std::string initial_message;
     FrameHandler1_2(std::string initial_message_) : initial_message(initial_message_){}
     void on_open(Client& client) { client.send_binary(initial_message); }
