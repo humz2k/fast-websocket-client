@@ -10,9 +10,9 @@ find_package(Boost REQUIRED)
 
 add_library(fastws INTERFACE)
 
-add_subdirectory(ext/small-string-buffer)
+add_subdirectory(ext/websocket-frame-utility)
 
-target_link_libraries(fastws INTERFACE OpenSSL::SSL smallstring)
+target_link_libraries(fastws INTERFACE OpenSSL::SSL wsframe)
 target_include_directories(fastws INTERFACE include ${Boost_INCLUDE_DIRS})
 
 if (${PROJECT_IS_TOP_LEVEL})

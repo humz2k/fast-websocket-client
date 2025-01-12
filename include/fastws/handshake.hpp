@@ -1,11 +1,13 @@
 #ifndef _FASTWS_KEYGEN_HPP_
 #define _FASTWS_KEYGEN_HPP_
 
-#include <random>
-#include <vector>
-#include <string>
 #include <openssl/bio.h>
+#include <openssl/buffer.h>
 #include <openssl/evp.h>
+
+#include <random>
+#include <string>
+#include <vector>
 
 namespace fastws {
 
@@ -17,7 +19,7 @@ inline std::string generate_sec_websocket_key() {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dist(0, 255);
-    for (auto &b : randomBytes) {
+    for (auto& b : randomBytes) {
         b = static_cast<unsigned char>(dist(gen));
     }
 
@@ -43,7 +45,9 @@ inline std::string generate_sec_websocket_key() {
     return base64Key;
 }
 
-inline std::string build_websocket_handshake_request(const std::string& host, const std::string& path, const std::string& key){
+inline std::string build_websocket_handshake_request(const std::string& host,
+                                                     const std::string& path,
+                                                     const std::string& key) {
     std::string request;
     request += "GET " + path + " HTTP/1.1\r\n";
     request += "Host: " + host + "\r\n";

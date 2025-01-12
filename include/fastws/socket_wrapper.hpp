@@ -1,7 +1,6 @@
 #ifndef _FASTWS_SOCKET_WRAPPER_HPP_
 #define _FASTWS_SOCKET_WRAPPER_HPP_
 
-
 #include <boost/circular_buffer.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
@@ -33,7 +32,6 @@ class SocketWrapperException : public std::runtime_error {
     explicit SocketWrapperException(const std::string& msg)
         : std::runtime_error(msg) {}
 };
-
 
 template <bool verbose = false> class SocketWrapper {
   private:
@@ -150,11 +148,12 @@ template <bool verbose = false> class SocketWrapper {
     }
 
   public:
-    SocketWrapper(const std::string host,
-                 const long port = 443)
+    SocketWrapper(const std::string host, const long port = 443)
         : m_host(host), m_port(port) {
         connect();
     }
+
+    SocketWrapper() {}
 
     SocketWrapper(const SocketWrapper&) = delete;
     SocketWrapper& operator=(const SocketWrapper&) = delete;
@@ -183,6 +182,8 @@ template <bool verbose = false> class SocketWrapper {
         other.m_sslsock = -1;
         other.m_ctx = nullptr;
         other.m_ssl = nullptr;
+
+        return *this;
     }
 
     // sends a request - forces the socket to fully send everything
@@ -233,9 +234,7 @@ template <bool verbose = false> class SocketWrapper {
         return m_out;
     }
 
-    void poll() {
-
-    }
+    void poll() {}
     ~SocketWrapper() { disconnect(); }
 };
 
