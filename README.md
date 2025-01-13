@@ -1,6 +1,6 @@
 # fast-websocket-client
 
-WIP C++17 low latency websocket client. The plan is for this to be fully compliant with RFC6455 eventually. Very very very basic benchmarks have the current version being ~20% faster than Websocket++ (with the specific intended usecases).
+WIP C++17 low latency websocket client. The plan is for this to be fully compliant with RFC6455 eventually. Very very very basic benchmarks have the current version being ~20% faster than Websocket++ (with the specific intended usecase of a single-threaded non-blocking client).
 
 The main goal here is to do minimal allocations and minimal copies.
 
