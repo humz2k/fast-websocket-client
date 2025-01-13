@@ -3,3 +3,4 @@
 clang-format -i include/fastws/*.hpp
 clang-format -i examples/*.cpp
 clang-format -i benchmark/*.cpp
+clang-format -i benchmark/*.hpp

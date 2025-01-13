@@ -28,15 +28,10 @@
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
+#include "benchmark.hpp"
+
 #include <chrono>
 #include <iostream>
-
-// #define MESSAGE
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-#define MESSAGE "ping"
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
@@ -49,7 +44,7 @@ typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 
 struct Handler {
     int count = 0;
-    int max_count = 10000;
+    int max_count = NSENDS;
     std::chrono::high_resolution_clock::time_point start;
     std::chrono::high_resolution_clock::time_point end;
 
@@ -87,6 +82,13 @@ struct Handler {
 };
 
 int main(int argc, char* argv[]) {
+    set_max_priority();
+    while (true) {
+        std::string command;
+        std::cin >> command;
+        if (command == "go")
+            break;
+    }
     // Create a client endpoint
     client c;
 

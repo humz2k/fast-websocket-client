@@ -1,21 +1,16 @@
 #include <fastws/fastws.hpp>
 
+#include "benchmark.hpp"
+
 #include <chrono>
 #include <iostream>
 #include <string>
 #include <string_view>
 
-// #define MESSAGE
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
-#define MESSAGE "ping"
-
 struct FrameHandler {
     using Client = fastws::Client<FrameHandler>;
     int count = 0;
-    int max_count = 10000;
+    int max_count = NSENDS;
     std::chrono::high_resolution_clock::time_point start;
     std::chrono::high_resolution_clock::time_point end;
 
@@ -51,6 +46,13 @@ struct FrameHandler {
 };
 
 int main() {
+    set_max_priority();
+    while (true) {
+        std::string command;
+        std::cin >> command;
+        if (command == "go")
+            break;
+    }
     FrameHandler handler;
     FrameHandler::Client client(handler, "127.0.0.1", "/", 9001);
     while (true)
