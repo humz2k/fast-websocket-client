@@ -7,7 +7,7 @@ Lightweight header-only C++17 websocket client library. The plan is for this to 
 * OpenSSL
 
 ## Building
-> Make sure you init and update all the gitsubmodules.
+> Make sure you init and update all the git submodules.
 
 Use the included CMakeLists.txt, or just point your compiler to the fastws headers, `ext/plf_nanotimer` and `ext/websocket-frame-utility/include`, Boost headers, OpenSSL headers, and link with OpenSSL.
 
