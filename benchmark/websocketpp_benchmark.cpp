@@ -83,6 +83,7 @@ struct Handler {
 
 int main(int argc, char* argv[]) {
     set_max_priority();
+    auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         std::string command;
         std::cin >> command;
@@ -124,4 +125,11 @@ int main(int argc, char* argv[]) {
     } catch (websocketpp::exception const& e) {
         std::cout << e.what() << std::endl;
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double total_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
+    std::cout << "TOTAL_TIME=" << total_time << "ms" << std::endl;
+    return 0;
 }

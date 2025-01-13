@@ -47,6 +47,7 @@ struct FrameHandler {
 
 int main() {
     set_max_priority();
+    auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         std::string command;
         std::cin >> command;
@@ -58,5 +59,10 @@ int main() {
     while (true)
         if (!client.poll())
             break;
+    auto end = std::chrono::high_resolution_clock::now();
+    double total_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
+    std::cout << "TOTAL_TIME=" << total_time << "ms" << std::endl;
     return 0;
 }
