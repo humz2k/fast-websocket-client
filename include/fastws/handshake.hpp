@@ -45,9 +45,9 @@ inline std::string generate_sec_websocket_key() {
     return base64Key;
 }
 
-inline std::string build_websocket_handshake_request(const std::string& host,
-                                                     const std::string& path,
-                                                     const std::string& key) {
+inline std::string build_websocket_handshake_request(
+    const std::string& host, const std::string& path, const std::string& key,
+    const std::string& extra_headers = "") {
     std::string request;
     request += "GET " + path + " HTTP/1.1\r\n";
     request += "Host: " + host + "\r\n";
@@ -55,6 +55,7 @@ inline std::string build_websocket_handshake_request(const std::string& host,
     request += "Connection: Upgrade\r\n";
     request += "Sec-WebSocket-Key: " + key + "\r\n";
     request += "Sec-WebSocket-Version: 13\r\n";
+    request += extra_headers;
     request += "\r\n";
     return request;
 }

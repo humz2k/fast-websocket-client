@@ -30,6 +30,7 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
     std::string m_host;
     std::string m_path;
     long m_port;
+    std::string m_extra_headers;
     SocketType<false> m_socket;
     wsframe::FrameParser m_parser;
     wsframe::FrameFactory m_factory;
@@ -43,7 +44,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
             host += ":" + std::to_string(m_port);
         }
         auto request = fastws::build_websocket_handshake_request(
-            host, m_path, fastws::generate_sec_websocket_key());
+            host, m_path, fastws::generate_sec_websocket_key(),
+            m_extra_headers);
         m_socket.send(request);
         std::string response = "";
         for (int i = 0; i < timeout * 10; i++) {
@@ -86,7 +88,6 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
 
     void handle_pong(std::string_view payload = {}) {
         m_last_rtt = m_ping_timer.get_elapsed_ms();
-        std::cout << "got pong: " << m_last_rtt << "ms" << std::endl;
         m_ping_timer.start();
         m_waiting_for_ping = false;
     }
@@ -110,10 +111,12 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
   public:
     WSClient(FrameHandler& handler, const std::string& host,
              const std::string& path, const long port = 443,
+             const std::string& extra_headers = "",
              int connection_timeout = 10 /*seconds*/,
              int ping_frequency = 60 /*seconds*/,
              int ping_timeout = 10 /*seconds*/)
         : m_handler(handler), m_host(host), m_path(path), m_port(port),
+          m_extra_headers(extra_headers),
           m_ping_every(((double)ping_frequency) * 1000.0),
           m_ping_timeout(((double)ping_timeout) * 1000.0) {
         if (!connect(connection_timeout)) {
@@ -189,6 +192,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         update_ping();
         return m_status;
     }
+
+    double last_rtt() const { return m_last_rtt; }
 };
 
 template <class FrameHandler>
