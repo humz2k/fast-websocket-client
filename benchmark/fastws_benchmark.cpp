@@ -8,7 +8,7 @@
 #include <string_view>
 
 struct FrameHandler {
-    using Client = fastws::Client<FrameHandler>;
+    using Client = fastws::NoTLSClient<FrameHandler>;
     int count = 0;
     int max_count = NSENDS;
     std::chrono::high_resolution_clock::time_point start;
@@ -57,7 +57,7 @@ int main() {
     FrameHandler handler;
     FrameHandler::Client client(handler, "127.0.0.1", "/", 9001);
     while (true)
-        if (!client.poll())
+        if (client.poll() != fastws::ConnectionStatus::HEALTHY)
             break;
     auto end = std::chrono::high_resolution_clock::now();
     double total_time =

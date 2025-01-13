@@ -25,7 +25,7 @@ void run_test_1_1(uint64_t message_len, std::string path, std::string ip = "127.
     FrameHandler1_1::Client client(handler, ip,
                                 path, port);
     while (true)
-        if (!client.poll())break;
+        if (client.poll() != fastws::ConnectionStatus::HEALTHY)break;
 }
 
 void test_1_1_1(std::string path = "/runCase?case=1&agent=myagent", std::string ip = "127.0.0.1", long port = 9001){
@@ -76,7 +76,7 @@ void run_test_1_2(uint64_t message_len, std::string path, std::string ip = "127.
     FrameHandler1_2::Client client(handler, ip,
                                 path, port);
     while (true)
-        if (!client.poll())break;
+        if (client.poll() != fastws::ConnectionStatus::HEALTHY)break;
 }
 
 void test_1_2_1(std::string path = "/runCase?case=9&agent=myagent", std::string ip = "127.0.0.1", long port = 9001){

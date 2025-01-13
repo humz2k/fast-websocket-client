@@ -15,7 +15,7 @@ add_library(fastws INTERFACE)
 add_subdirectory(ext/websocket-frame-utility)
 
 target_link_libraries(fastws INTERFACE OpenSSL::SSL wsframe)
-target_include_directories(fastws INTERFACE include ${Boost_INCLUDE_DIRS})
+target_include_directories(fastws INTERFACE include ${Boost_INCLUDE_DIRS} ext/plf_nanotimer)
 
 if (${PROJECT_IS_TOP_LEVEL})
     file( GLOB DRIVER_SOURCES examples/*.cpp )

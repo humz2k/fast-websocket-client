@@ -16,9 +16,6 @@ struct FrameHandler {
     }
     void on_text(Client& client, wsframe::Frame frame) {
         std::cout << " > text: " << frame << std::endl;
-        if (frame.payload == "Hello, World!") {
-            client.close();
-        }
     }
     void on_binary(Client& client, wsframe::Frame frame) {
         std::cout << " > binary: " << frame << std::endl;
