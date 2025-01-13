@@ -3,7 +3,6 @@
 
 #include <wsframe/wsframe.hpp>
 
-#include <boost/circular_buffer.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
 #include <algorithm>
