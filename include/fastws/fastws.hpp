@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _FASTWS_FASTWS_HPP_
 #define _FASTWS_FASTWS_HPP_
 

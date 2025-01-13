@@ -1,5 +1,5 @@
-#ifndef _FASTWS_KEYGEN_HPP_
-#define _FASTWS_KEYGEN_HPP_
+#ifndef _FASTWS_HANDSHAKE_HPP_
+#define _FASTWS_HANDSHAKE_HPP_
 
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
@@ -61,4 +61,4 @@ inline std::string build_websocket_handshake_request(const std::string& host,
 
 } // namespace fastws
 
-#endif // _FASTWS_KEYGEN_HPP_
+#endif // _FASTWS_HANDSHAKE_HPP_
