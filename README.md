@@ -64,10 +64,11 @@ int main() {
 The constructor for `fastws::WSCLient` (and so `fastws::TLSClient` and `fastws::NoTLSCLient`) has the signature
 ```c++
 WSClient(FrameHandler& handler, const std::string& host,
-            const std::string& path, const long port = 443,
-            int connection_timeout = 10 /*seconds*/,
-            int ping_frequency = 60 /*seconds*/,
-            int ping_timeout = 10 /*seconds*/);
+        const std::string& path, const long port = 443,
+        const std::string& extra_headers = "",
+        int connection_timeout = 10 /*seconds*/,
+        int ping_frequency = 60 /*seconds*/,
+        int ping_timeout = 10 /*seconds*/);
 ```
 where `connection_timeout` is how long the client will wait to recieve the open connection handshake, `ping_frequency` is how often the client sends a ping to the server, and `ping_timeout` is how long the client will wait to receive a pong from the server before giving up.
 
