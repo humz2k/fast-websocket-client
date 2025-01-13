@@ -1,7 +1,7 @@
 #ifndef _FASTWS_SOCKET_WRAPPER_HPP_
 #define _FASTWS_SOCKET_WRAPPER_HPP_
 
-#include <wsframe/wsframe.hpp>
+#include "wsframe/wsframe.hpp"
 
 #include <boost/pool/pool_alloc.hpp>
 
