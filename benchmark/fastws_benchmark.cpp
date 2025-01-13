@@ -5,7 +5,11 @@
 #include <string>
 #include <string_view>
 
-//#define MESSAGE "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// #define MESSAGE
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
 #define MESSAGE "ping"
 
 struct FrameHandler {
@@ -21,17 +25,19 @@ struct FrameHandler {
     }
 
     void on_text(Client& client, wsframe::Frame frame) {
-        if (frame.payload == MESSAGE){
+        if (frame.payload == MESSAGE) {
             count++;
             if (count >= max_count) {
                 end = std::chrono::high_resolution_clock::now();
                 double total_time =
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end -
-                                                                        start)
+                                                                         start)
                         .count();
-                std::cout << "total time (us): " << total_time * 0.001 << std::endl;
+                std::cout << "total time (us): " << total_time * 0.001
+                          << std::endl;
                 std::cout << "average_rtt (us): "
-                        << (total_time / (double)max_count) * 0.001 << std::endl;
+                          << (total_time / (double)max_count) * 0.001
+                          << std::endl;
                 client.close();
                 return;
             }

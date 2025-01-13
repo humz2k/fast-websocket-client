@@ -31,7 +31,11 @@
 #include <chrono>
 #include <iostream>
 
-//#define MESSAGE "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping" "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// #define MESSAGE
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
+// "pingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingpingping"
 #define MESSAGE "ping"
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
@@ -51,18 +55,20 @@ struct Handler {
 
     void on_message(client* c, websocketpp::connection_hdl hdl,
                     message_ptr msg) {
-        if (msg->get_payload() == MESSAGE){
+        if (msg->get_payload() == MESSAGE) {
             count++;
             if (count >= max_count) {
                 end = std::chrono::high_resolution_clock::now();
 
                 double total_time =
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end -
-                                                                        start)
+                                                                         start)
                         .count();
-                std::cout << "total time (us): " << total_time * 0.001 << std::endl;
+                std::cout << "total time (us): " << total_time * 0.001
+                          << std::endl;
                 std::cout << "average_rtt (us): "
-                        << (total_time / (double)max_count) * 0.001 << std::endl;
+                          << (total_time / (double)max_count) * 0.001
+                          << std::endl;
 
                 websocketpp::lib::error_code ec;
                 c->close(hdl, websocketpp::close::status::going_away, "", ec);

@@ -1,6 +1,8 @@
 #ifndef _FASTWS_SOCKET_WRAPPER_HPP_
 #define _FASTWS_SOCKET_WRAPPER_HPP_
 
+#include <wsframe/wsframe.hpp>
+
 #include <boost/circular_buffer.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
@@ -216,7 +218,6 @@ template <bool verbose = false> class SSLSocketWrapper {
         return sent;
     }
 
-    // this doesn't update the parser when you call it!
     std::string_view read(const size_t read_size = 100) {
         size_t read = 0;
         m_out.clear();
@@ -232,6 +233,23 @@ template <bool verbose = false> class SSLSocketWrapper {
         }
 
         return m_out;
+    }
+
+    bool read_into(wsframe::FrameBuffer& frame_buffer,
+                   const std::size_t chunk_size_hint = 1024) {
+        std::size_t read = 0;
+        bool new_data = false;
+        while (true) {
+            frame_buffer.ensure_extra_space(chunk_size_hint);
+            auto* buf = frame_buffer.tail();
+            int rc = SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
+            if (read > 0)
+                new_data = true;
+            frame_buffer.claim_space(read);
+            if ((read < chunk_size_hint) || (rc == 0))
+                break;
+        }
+        return new_data;
     }
 
     ~SSLSocketWrapper() { disconnect(); }
@@ -377,7 +395,7 @@ template <bool verbose = false> class SocketWrapper {
     // returns everything read in m_out as a string_view.
     // if no data is available, returns empty.
     // if the socket is closed or error, might throw or return partial.
-    std::string_view read(std::size_t chunk_size = 4096) {
+    std::string_view read(std::size_t chunk_size = 1024) {
         m_out.clear();
         while (true) {
             // expand buffer
@@ -413,6 +431,33 @@ template <bool verbose = false> class SocketWrapper {
             }
         }
         return m_out;
+    }
+
+    bool read_into(wsframe::FrameBuffer& frame_buffer,
+                   const std::size_t chunk_size_hint = 1024) {
+        bool new_data = false;
+        while (true) {
+            frame_buffer.ensure_extra_space(chunk_size_hint);
+            auto* buf = frame_buffer.tail();
+
+            ssize_t ret = ::recv(m_sockfd, buf, chunk_size_hint, 0);
+            if (ret < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    break;
+                } else {
+                    throw SocketWrapperException("recv() failed: " +
+                                                 std::to_string(errno));
+                }
+            } else if (ret == 0) {
+                break;
+            } else {
+                new_data = true;
+                frame_buffer.claim_space(ret);
+                if (static_cast<size_t>(ret) < chunk_size_hint)
+                    break;
+            }
+        }
+        return new_data;
     }
 };
 
