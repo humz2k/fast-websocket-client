@@ -122,7 +122,9 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         if (!connect(connection_timeout)) {
             throw std::runtime_error("Failed to connect to ws server");
         }
+        m_waiting_for_ping = true;
         m_ping_timer.start();
+        send_ping();
     }
 
     ConnectionStatus status() const { return m_status; }
