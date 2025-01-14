@@ -230,6 +230,9 @@ template <bool verbose = false> class SSLSocketWrapper {
                 break;
             }
         }
+        if (m_out != ""){
+            std::cout << "read: " << std::string_view(m_out) << "\n";
+        }
 
         return m_out;
     }
