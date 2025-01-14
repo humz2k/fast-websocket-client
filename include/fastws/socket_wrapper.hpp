@@ -218,18 +218,13 @@ template <bool verbose = false> class SSLSocketWrapper {
     }
 
     std::string_view read(const size_t read_size = 100) {
-        size_t read = 0;
         m_out.clear();
-        while (true) {
-            const size_t original_size = m_out.size();
-            m_out.resize(original_size + read_size);
-            char* buf = &(m_out.data()[original_size]);
-            int rc = SSL_read_ex(m_ssl, buf, read_size, &read);
-            m_out.resize(original_size + read);
-            if ((read < read_size) || (rc == 0)) {
-                break;
-            }
-        }
+        size_t read = 0;
+        const size_t original_size = m_out.size();
+        m_out.resize(original_size + read_size);
+        char* buf = &(m_out.data()[original_size]);
+        int rc = SSL_read_ex(m_ssl, buf, read_size, &read);
+        m_out.resize(original_size + read);
         return m_out;
     }
 
@@ -237,16 +232,12 @@ template <bool verbose = false> class SSLSocketWrapper {
                    const std::size_t chunk_size_hint = 1024) {
         std::size_t read = 0;
         bool new_data = false;
-        while (true) {
-            frame_buffer.ensure_extra_space(chunk_size_hint);
-            auto* buf = frame_buffer.tail();
-            int rc = SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
-            if (read > 0)
-                new_data = true;
-            frame_buffer.claim_space(read);
-            if ((read < chunk_size_hint) || (rc == 0))
-                break;
-        }
+        frame_buffer.ensure_extra_space(chunk_size_hint);
+        auto* buf = frame_buffer.tail();
+        int rc = SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
+        if (read > 0)
+            new_data = true;
+        frame_buffer.claim_space(read);
         return new_data;
     }
 
@@ -395,38 +386,25 @@ template <bool verbose = false> class SocketWrapper {
     // if the socket is closed or error, might throw or return partial.
     std::string_view read(std::size_t chunk_size = 1024) {
         m_out.clear();
-        while (true) {
-            // expand buffer
-            std::size_t old_size = m_out.size();
-            m_out.resize(old_size + chunk_size);
-            char* buf = &m_out[old_size];
+        // expand buffer
+        std::size_t old_size = m_out.size();
+        m_out.resize(old_size + chunk_size);
+        char* buf = &m_out[old_size];
 
-            // read from socket
-            ssize_t ret = ::recv(m_sockfd, buf, chunk_size, 0);
-            if (ret < 0) {
-                // handle EAGAIN or EWOULDBLOCK if non-blocking
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // no more data available now
-                    m_out.resize(old_size);
-                    break;
-                } else {
-                    throw SocketWrapperException("recv() failed: " +
-                                                 std::to_string(errno));
-                }
-            } else if (ret == 0) {
-                // connection closed by peer
+        // read from socket
+        ssize_t ret = ::recv(m_sockfd, buf, chunk_size, 0);
+        if (ret < 0) {
+            // handle EAGAIN or EWOULDBLOCK if non-blocking
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 m_out.resize(old_size);
-                break;
             } else {
-                // got ret bytes
-                m_out.resize(old_size + ret);
-                // if ret < chunk_size, might be no more data right now
-                if (static_cast<size_t>(ret) < chunk_size) {
-                    // done reading for now
-                    break;
-                }
-                // else loop to grab more
+                throw SocketWrapperException("recv() failed: " +
+                                                std::to_string(errno));
             }
+        } else if (ret == 0) {
+            m_out.resize(old_size);
+        } else {
+            m_out.resize(old_size + ret);
         }
         return m_out;
     }
@@ -434,26 +412,18 @@ template <bool verbose = false> class SocketWrapper {
     bool read_into(wsframe::FrameBuffer& frame_buffer,
                    const std::size_t chunk_size_hint = 1024) {
         bool new_data = false;
-        while (true) {
-            frame_buffer.ensure_extra_space(chunk_size_hint);
-            auto* buf = frame_buffer.tail();
+        frame_buffer.ensure_extra_space(chunk_size_hint);
+        auto* buf = frame_buffer.tail();
 
-            ssize_t ret = ::recv(m_sockfd, buf, chunk_size_hint, 0);
-            if (ret < 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    break;
-                } else {
-                    throw SocketWrapperException("recv() failed: " +
-                                                 std::to_string(errno));
-                }
-            } else if (ret == 0) {
-                break;
-            } else {
-                new_data = true;
-                frame_buffer.claim_space(ret);
-                if (static_cast<size_t>(ret) < chunk_size_hint)
-                    break;
+        ssize_t ret = ::recv(m_sockfd, buf, chunk_size_hint, 0);
+        if (ret < 0) {
+            if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
+                throw SocketWrapperException("recv() failed: " +
+                                                std::to_string(errno));
             }
+        } else if (ret > 0) {
+            new_data = true;
+            frame_buffer.claim_space(ret);
         }
         return new_data;
     }

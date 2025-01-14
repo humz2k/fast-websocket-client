@@ -164,8 +164,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
 
     ConnectionStatus poll() {
         for (auto parsed_frame =
-                 m_parser.update(m_socket.read(1024));
-             parsed_frame.has_value(); parsed_frame = m_parser.update(m_socket.read(1024))) {
+                 m_parser.update(m_socket.read_into(m_parser.frame_buffer(),1024));
+             parsed_frame.has_value(); parsed_frame = m_parser.update(m_socket.read_into(m_parser.frame_buffer(),1024))) {
             auto frame = parsed_frame.value();
             switch (frame.opcode) {
             case wsframe::Frame::Opcode::TEXT:
