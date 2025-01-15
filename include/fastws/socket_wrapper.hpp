@@ -223,7 +223,7 @@ template <bool verbose = false> class SSLSocketWrapper {
         const size_t original_size = m_out.size();
         m_out.resize(original_size + read_size);
         char* buf = &(m_out.data()[original_size]);
-        int rc = SSL_read_ex(m_ssl, buf, read_size, &read);
+        SSL_read_ex(m_ssl, buf, read_size, &read);
         m_out.resize(original_size + read);
         return m_out;
     }
@@ -234,7 +234,7 @@ template <bool verbose = false> class SSLSocketWrapper {
         bool new_data = false;
         frame_buffer.ensure_extra_space(chunk_size_hint);
         auto* buf = frame_buffer.tail();
-        int rc = SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
+        SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
         if (read > 0)
             new_data = true;
         frame_buffer.claim_space(read);
