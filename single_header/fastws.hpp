@@ -392,7 +392,7 @@ class FrameBuffer {
                     view.size() * sizeof(std::uint8_t));
     }
 
-    void push_back(const std::string_view& view) {
+    void push_back(std::string_view view) {
         ensure_fit(m_ptr + view.size());
         std::memcpy(get_space(view.size()), view.data(),
                     view.size() * sizeof(char));
@@ -778,7 +778,7 @@ class FrameParser {
         return parse();
     }
 
-    std::optional<Frame> update(const std::string_view& view) {
+    std::optional<Frame> update(std::string_view view) {
         if (done())
             reset();
         if (view.size() != 0)
@@ -990,7 +990,7 @@ template <bool verbose = false> class SSLSocketWrapper {
     }
 
     // sends a request - forces the socket to fully send everything
-    int send(const std::string_view& req) {
+    int send(std::string_view req) {
         const char* buf = req.data();
         int to_send = req.length();
         int sent = 0;
@@ -1171,7 +1171,7 @@ template <bool verbose = false> class SocketWrapper {
 
     // send all data, blocking until complete (though socket is non-blocking).
     // in production, you might handle EAGAIN / partial writes more gracefully.
-    int send(const std::string_view& req) {
+    int send(std::string_view req) {
         const char* buf = req.data();
         int to_send = static_cast<int>(req.size());
         int total_sent = 0;
@@ -1320,7 +1320,7 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         return m_connection_open;
     }
 
-    void send(const std::string_view& frame) { m_socket.send(frame); }
+    void send(std::string_view frame) { m_socket.send(frame); }
 
     void send_pong(std::string_view payload) {
         send(m_factory.pong(true, payload));

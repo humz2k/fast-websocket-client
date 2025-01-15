@@ -66,7 +66,7 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         return m_connection_open;
     }
 
-    void send(const std::string_view& frame) { m_socket.send(frame); }
+    void send(std::string_view frame) { m_socket.send(frame); }
 
     void send_pong(std::string_view payload) {
         send(m_factory.pong(true, payload));
@@ -163,9 +163,11 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
     }
 
     ConnectionStatus poll() {
-        for (auto parsed_frame =
-                 m_parser.update(m_socket.read_into(m_parser.frame_buffer(),1024));
-             parsed_frame.has_value(); parsed_frame = m_parser.update(m_socket.read_into(m_parser.frame_buffer(),1024))) {
+        for (auto parsed_frame = m_parser.update(
+                 m_socket.read_into(m_parser.frame_buffer(), 1024));
+             parsed_frame.has_value();
+             parsed_frame = m_parser.update(
+                 m_socket.read_into(m_parser.frame_buffer(), 1024))) {
             auto frame = parsed_frame.value();
             switch (frame.opcode) {
             case wsframe::Frame::Opcode::TEXT:

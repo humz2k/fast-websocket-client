@@ -188,7 +188,7 @@ template <bool verbose = false> class SSLSocketWrapper {
     }
 
     // sends a request - forces the socket to fully send everything
-    int send(const std::string_view& req) {
+    int send(std::string_view req) {
         const char* buf = req.data();
         int to_send = req.length();
         int sent = 0;
@@ -357,9 +357,8 @@ template <bool verbose = false> class SocketWrapper {
 
     ~SocketWrapper() { disconnect(); }
 
-    // send all data, blocking until complete (though socket is non-blocking).
-    // in production, you might handle EAGAIN / partial writes more gracefully.
-    int send(const std::string_view& req) {
+    // send all data
+    int send(std::string_view req) {
         const char* buf = req.data();
         int to_send = static_cast<int>(req.size());
         int total_sent = 0;
@@ -399,7 +398,7 @@ template <bool verbose = false> class SocketWrapper {
                 m_out.resize(old_size);
             } else {
                 throw SocketWrapperException("recv() failed: " +
-                                                std::to_string(errno));
+                                             std::to_string(errno));
             }
         } else if (ret == 0) {
             m_out.resize(old_size);
@@ -419,7 +418,7 @@ template <bool verbose = false> class SocketWrapper {
         if (ret < 0) {
             if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
                 throw SocketWrapperException("recv() failed: " +
-                                                std::to_string(errno));
+                                             std::to_string(errno));
             }
         } else if (ret > 0) {
             new_data = true;
