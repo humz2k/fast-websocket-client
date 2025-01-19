@@ -162,7 +162,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         send(m_factory.binary(true, true, payload));
     }
 
-    ConnectionStatus poll() {
+    ConnectionStatus poll(const int max_reads = 4) {
+        int count_reads = 0;
         for (auto parsed_frame = m_parser.update(
                  m_socket.read_into(m_parser.frame_buffer(), 1024));
              parsed_frame.has_value();
@@ -192,6 +193,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
                 m_handler.on_continuation(*this, std::move(frame));
                 break;
             }
+            count_reads++;
+            if (count_reads >= max_reads)break;
         }
         update_ping();
         return m_status;
