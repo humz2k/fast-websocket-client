@@ -44,9 +44,9 @@ inline std::string generate_sec_websocket_key() {
     return base64Key;
 }
 
-inline std::string build_websocket_handshake_request(const std::string& host,
-                                                     const std::string& path,
-                                                     const std::string& key) {
+inline std::string build_websocket_handshake_request(
+    const std::string& host, const std::string& path, const std::string& key,
+    const std::string& extra_headers = "") {
     std::string request;
     request += "GET " + path + " HTTP/1.1\r\n";
     request += "Host: " + host + "\r\n";
@@ -54,6 +54,7 @@ inline std::string build_websocket_handshake_request(const std::string& host,
     request += "Connection: Upgrade\r\n";
     request += "Sec-WebSocket-Key: " + key + "\r\n";
     request += "Sec-WebSocket-Version: 13\r\n";
+    request += extra_headers;
     request += "\r\n";
     return request;
 }
@@ -740,10 +741,11 @@ class FrameParser {
 
     void reset() {
         if (remaining() > 0) {
-            auto previous =
-                FrameBuffer::View(m_frame_buffer.head() + m_ptr, remaining());
+            auto re_space = remaining();
+            std::memmove(m_frame_buffer.head(), m_frame_buffer.head() + m_ptr,
+                         re_space);
             m_frame_buffer.reset();
-            m_frame_buffer.push_back(previous);
+            m_frame_buffer.claim_space(re_space);
             m_ptr = 0;
         } else {
             m_frame_buffer.reset();
@@ -1020,19 +1022,13 @@ template <bool verbose = false> class SSLSocketWrapper {
     }
 
     std::string_view read(const size_t read_size = 100) {
-        size_t read = 0;
         m_out.clear();
-        while (true) {
-            const size_t original_size = m_out.size();
-            m_out.resize(original_size + read_size);
-            char* buf = &(m_out.data()[original_size]);
-            int rc = SSL_read_ex(m_ssl, buf, read_size, &read);
-            m_out.resize(original_size + read);
-            if ((read < read_size) || (rc == 0)) {
-                break;
-            }
-        }
-
+        size_t read = 0;
+        const size_t original_size = m_out.size();
+        m_out.resize(original_size + read_size);
+        char* buf = &(m_out.data()[original_size]);
+        SSL_read_ex(m_ssl, buf, read_size, &read);
+        m_out.resize(original_size + read);
         return m_out;
     }
 
@@ -1040,16 +1036,12 @@ template <bool verbose = false> class SSLSocketWrapper {
                    const std::size_t chunk_size_hint = 1024) {
         std::size_t read = 0;
         bool new_data = false;
-        while (true) {
-            frame_buffer.ensure_extra_space(chunk_size_hint);
-            auto* buf = frame_buffer.tail();
-            int rc = SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
-            if (read > 0)
-                new_data = true;
-            frame_buffer.claim_space(read);
-            if ((read < chunk_size_hint) || (rc == 0))
-                break;
-        }
+        frame_buffer.ensure_extra_space(chunk_size_hint);
+        auto* buf = frame_buffer.tail();
+        SSL_read_ex(m_ssl, buf, chunk_size_hint, &read);
+        if (read > 0)
+            new_data = true;
+        frame_buffer.claim_space(read);
         return new_data;
     }
 
@@ -1169,8 +1161,7 @@ template <bool verbose = false> class SocketWrapper {
 
     ~SocketWrapper() { disconnect(); }
 
-    // send all data, blocking until complete (though socket is non-blocking).
-    // in production, you might handle EAGAIN / partial writes more gracefully.
+    // send all data
     int send(std::string_view req) {
         const char* buf = req.data();
         int to_send = static_cast<int>(req.size());
@@ -1198,38 +1189,25 @@ template <bool verbose = false> class SocketWrapper {
     // if the socket is closed or error, might throw or return partial.
     std::string_view read(std::size_t chunk_size = 1024) {
         m_out.clear();
-        while (true) {
-            // expand buffer
-            std::size_t old_size = m_out.size();
-            m_out.resize(old_size + chunk_size);
-            char* buf = &m_out[old_size];
+        // expand buffer
+        std::size_t old_size = m_out.size();
+        m_out.resize(old_size + chunk_size);
+        char* buf = &m_out[old_size];
 
-            // read from socket
-            ssize_t ret = ::recv(m_sockfd, buf, chunk_size, 0);
-            if (ret < 0) {
-                // handle EAGAIN or EWOULDBLOCK if non-blocking
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // no more data available now
-                    m_out.resize(old_size);
-                    break;
-                } else {
-                    throw SocketWrapperException("recv() failed: " +
-                                                 std::to_string(errno));
-                }
-            } else if (ret == 0) {
-                // connection closed by peer
+        // read from socket
+        ssize_t ret = ::recv(m_sockfd, buf, chunk_size, 0);
+        if (ret < 0) {
+            // handle EAGAIN or EWOULDBLOCK if non-blocking
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 m_out.resize(old_size);
-                break;
             } else {
-                // got ret bytes
-                m_out.resize(old_size + ret);
-                // if ret < chunk_size, might be no more data right now
-                if (static_cast<size_t>(ret) < chunk_size) {
-                    // done reading for now
-                    break;
-                }
-                // else loop to grab more
+                throw SocketWrapperException("recv() failed: " +
+                                             std::to_string(errno));
             }
+        } else if (ret == 0) {
+            m_out.resize(old_size);
+        } else {
+            m_out.resize(old_size + ret);
         }
         return m_out;
     }
@@ -1237,26 +1215,18 @@ template <bool verbose = false> class SocketWrapper {
     bool read_into(wsframe::FrameBuffer& frame_buffer,
                    const std::size_t chunk_size_hint = 1024) {
         bool new_data = false;
-        while (true) {
-            frame_buffer.ensure_extra_space(chunk_size_hint);
-            auto* buf = frame_buffer.tail();
+        frame_buffer.ensure_extra_space(chunk_size_hint);
+        auto* buf = frame_buffer.tail();
 
-            ssize_t ret = ::recv(m_sockfd, buf, chunk_size_hint, 0);
-            if (ret < 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    break;
-                } else {
-                    throw SocketWrapperException("recv() failed: " +
-                                                 std::to_string(errno));
-                }
-            } else if (ret == 0) {
-                break;
-            } else {
-                new_data = true;
-                frame_buffer.claim_space(ret);
-                if (static_cast<size_t>(ret) < chunk_size_hint)
-                    break;
+        ssize_t ret = ::recv(m_sockfd, buf, chunk_size_hint, 0);
+        if (ret < 0) {
+            if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
+                throw SocketWrapperException("recv() failed: " +
+                                             std::to_string(errno));
             }
+        } else if (ret > 0) {
+            new_data = true;
+            frame_buffer.claim_space(ret);
         }
         return new_data;
     }
@@ -1286,6 +1256,7 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
     std::string m_host;
     std::string m_path;
     long m_port;
+    std::string m_extra_headers;
     SocketType<false> m_socket;
     wsframe::FrameParser m_parser;
     wsframe::FrameFactory m_factory;
@@ -1299,7 +1270,8 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
             host += ":" + std::to_string(m_port);
         }
         auto request = fastws::build_websocket_handshake_request(
-            host, m_path, fastws::generate_sec_websocket_key());
+            host, m_path, fastws::generate_sec_websocket_key(),
+            m_extra_headers);
         m_socket.send(request);
         std::string response = "";
         for (int i = 0; i < timeout * 10; i++) {
@@ -1342,7 +1314,6 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
 
     void handle_pong(std::string_view payload = {}) {
         m_last_rtt = m_ping_timer.get_elapsed_ms();
-        std::cout << "got pong: " << m_last_rtt << "ms" << std::endl;
         m_ping_timer.start();
         m_waiting_for_ping = false;
     }
@@ -1366,16 +1337,20 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
   public:
     WSClient(FrameHandler& handler, const std::string& host,
              const std::string& path, const long port = 443,
+             const std::string& extra_headers = "",
              int connection_timeout = 10 /*seconds*/,
              int ping_frequency = 60 /*seconds*/,
              int ping_timeout = 10 /*seconds*/)
         : m_handler(handler), m_host(host), m_path(path), m_port(port),
+          m_extra_headers(extra_headers),
           m_ping_every(((double)ping_frequency) * 1000.0),
           m_ping_timeout(((double)ping_timeout) * 1000.0) {
         if (!connect(connection_timeout)) {
             throw std::runtime_error("Failed to connect to ws server");
         }
+        m_waiting_for_ping = true;
         m_ping_timer.start();
+        send_ping();
     }
 
     ConnectionStatus status() const { return m_status; }
@@ -1413,10 +1388,13 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
         send(m_factory.binary(true, true, payload));
     }
 
-    ConnectionStatus poll() {
-        for (auto parsed_frame =
-                 m_parser.update(m_socket.read_into(m_parser.frame_buffer()));
-             parsed_frame.has_value(); parsed_frame = m_parser.update(false)) {
+    ConnectionStatus poll(const int max_reads = 4) {
+        int count_reads = 0;
+        for (auto parsed_frame = m_parser.update(
+                 m_socket.read_into(m_parser.frame_buffer(), 1024));
+             parsed_frame.has_value();
+             parsed_frame = m_parser.update(
+                 m_socket.read_into(m_parser.frame_buffer(), 1024))) {
             auto frame = parsed_frame.value();
             switch (frame.opcode) {
             case wsframe::Frame::Opcode::TEXT:
@@ -1441,10 +1419,14 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
                 m_handler.on_continuation(*this, std::move(frame));
                 break;
             }
+            count_reads++;
+            if (count_reads >= max_reads)break;
         }
         update_ping();
         return m_status;
     }
+
+    double last_rtt() const { return m_last_rtt; }
 };
 
 template <class FrameHandler>
