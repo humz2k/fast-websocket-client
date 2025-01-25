@@ -1281,7 +1281,7 @@ template <template <bool> class SocketType, class FrameHandler> class WSClient {
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        m_connection_open = response.find("HTTP/1.1 101 Switching Protocols") !=
+        m_connection_open = response.find("HTTP/1.1 101") !=
                             std::string::npos;
         if (m_connection_open) {
             m_status = ConnectionStatus::HEALTHY;
