@@ -5,6 +5,7 @@ Lightweight header-only C++17 websocket client library. The plan is for this to 
 ### `benchmark/latency`
 A lot of the latency here will probably just be server Python overhead, so the actual numbers are not super relevant, more the relative difference.
 ![bench1](benchmark/latency/simple_latency.jpg)
+![bench2](benchmark/latency/many_latency.jpg)
 
 ## Dependencies
 * C++17 or higher
