@@ -4,7 +4,7 @@ Lightweight header-only C++17 websocket client library. The plan is for this to 
 
 ## Benchmarks
 ### `benchmark/latency`
-A lot of the latency here will probably just be server Python overhead, so the actual numbers are not super relevant, more the relative difference.
+> A lot of the latency here will probably just be server Python overhead, so the actual numbers are not super relevant, more the relative difference.
 #### Isolated message latency
 || mean ($\mu s$) | std ($\mu s$) | min ($\mu s$) | 25% ($\mu s$) | 50% ($\mu s$) | 75% ($\mu s$) | max ($\mu s$)
 |---|---|---|---|---|---|---|---
