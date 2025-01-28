@@ -12,7 +12,6 @@ jobs:
 
     strategy:
       fail-fast: false
-
       matrix:
         os: [ubuntu-latest]
         build_type: [Release]
@@ -26,21 +25,32 @@ jobs:
             cpp_compiler: clang++
 
     steps:
-    - uses: actions/checkout@v4
+      # Checkout the repo and submodules
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
 
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      # Install dependencies: Boost and OpenSSL
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev libssl-dev
 
-    - name: Configure CMake
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+      # Set reusable output variables
+      - name: Set reusable strings
+        id: strings
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      # Configure CMake
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
+
+      # Build
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
