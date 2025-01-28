@@ -1,7 +1,7 @@
 # fast-websocket-client
 Lightweight header-only C++17 websocket client library. The plan is for this to be fully compliant with RFC6455 eventually.
 
-## (Ad hoc/unscientific) Benchmarks
+## Benchmarks
 ### `benchmark/latency`
 A lot of the latency here will probably just be server Python overhead, so the actual numbers are not super relevant, more the relative difference.
 ![bench1](benchmark/latency/simple_latency.jpg)
