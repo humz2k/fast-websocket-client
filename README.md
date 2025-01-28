@@ -1,5 +1,4 @@
 ![build](https://github.com/humz2k/fast-websocket-client/actions/workflows/cmake-multi-platform.yml/badge.svg)
-
 # fast-websocket-client
 Lightweight header-only C++17 websocket client library. The plan is for this to be fully compliant with RFC6455 eventually.
 
