@@ -10,7 +10,6 @@
 struct FrameHandler {
     using Client = fastws::NoTLSClient<FrameHandler>;
     void on_open(Client& client) {
-        std::cout << "connection opened" << std::endl;
         client.send_text("fastws");
     }
     void on_text(Client& client, wsframe::Frame frame) {
