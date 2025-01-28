@@ -1,6 +1,10 @@
 # fast-websocket-client
 Lightweight header-only C++17 websocket client library. The plan is for this to be fully compliant with RFC6455 eventually.
 
+## (Ad hoc/unscientific) Benchmarks
+### `benchmark/latency/`
+![bench1](benchmark/latency/simple_latency.jpg)
+
 ## Dependencies
 * C++17 or higher
 * Boost (Boost.Pool)
